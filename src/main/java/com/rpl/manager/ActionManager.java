@@ -97,7 +97,10 @@ public class ActionManager {
         ActionStatus next = states.get(ActionStatus.REVIEWING).approve();
         action.setStatus(next);
         ProposedAction saved = proposedActionRepository.save(action);
-        implementedActionRepository.findByProposedAction_Id(saved.getId()).ifPresent(ledgerEntryEngine::generate);
+        ImplementedAction impl = implementedActionRepository
+                .findByProposedAction_Id(saved.getId())
+                .orElseThrow(() -> new NotFoundException("No implemented action found for action " + saved.getId()));
+        ledgerEntryEngine.generate(impl);
         auditLogManager.record("ACTION_APPROVED", null, null, saved.getId());
         return saved;
     }
@@ -164,7 +167,10 @@ public class ActionManager {
         }
 
         if ("complete".equalsIgnoreCase(event)) {
-            implementedActionRepository.findByProposedAction_Id(saved.getId()).ifPresent(ledgerEntryEngine::generate);
+            ImplementedAction impl = implementedActionRepository
+                    .findByProposedAction_Id(saved.getId())
+                    .orElseThrow(() -> new NotFoundException("No implemented action found for action " + saved.getId()));
+            ledgerEntryEngine.generate(impl);
         }
 
         String auditEvent = switch (event.toLowerCase()) {

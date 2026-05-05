@@ -60,8 +60,9 @@ public class AssetLedgerEntryGenerator extends AbstractLedgerEntryGenerator {
     @Override
     protected void validate(List<ResourceAllocation> allocations) {
         for (ResourceAllocation allocation : allocations) {
-            if (allocation.getAssetId() == null || allocation.getAssetId().isBlank()) {
-                throw new ValidationException("ASSET allocation requires assetId");
+            if (allocation.getKind() == com.rpl.domain.AllocationKind.SPECIFIC
+                    && (allocation.getAssetId() == null || allocation.getAssetId().isBlank())) {
+                throw new ValidationException("SPECIFIC ASSET allocation requires assetId");
             }
             if (allocation.getQuantity() <= 0) {
                 throw new ValidationException("Quantity must be positive");
