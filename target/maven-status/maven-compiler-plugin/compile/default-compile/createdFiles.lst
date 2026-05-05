@@ -24,6 +24,7 @@ com/rpl/engine/PostingRuleEngine.class
 com/rpl/domain/state/CompletedState.class
 com/rpl/manager/ActionManager.class
 com/rpl/domain/ActionStatus.class
+com/rpl/client/dto/ActionPatchRequest.class
 com/rpl/engine/ConsumableLedgerEntryGenerator.class
 com/rpl/resourceaccess/AccountRepository.class
 com/rpl/client/dto/SuspendRequest.class

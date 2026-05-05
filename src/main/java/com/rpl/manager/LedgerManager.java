@@ -8,8 +8,10 @@ import com.rpl.resourceaccess.AccountRepository;
 import com.rpl.resourceaccess.EntryRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 public class LedgerManager {
     private final AccountRepository accountRepository;
     private final EntryRepository entryRepository;

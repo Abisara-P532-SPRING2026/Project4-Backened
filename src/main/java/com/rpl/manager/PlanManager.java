@@ -15,8 +15,10 @@ import com.rpl.resourceaccess.ProtocolRepository;
 import java.time.Clock;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class PlanManager {
     private final PlanRepository planRepository;
     private final ProtocolRepository protocolRepository;
@@ -40,7 +42,13 @@ public class PlanManager {
         if (protocolId != null) {
             Protocol protocol = protocolRepository.findById(protocolId)
                     .orElseThrow(() -> new NotFoundException("Protocol not found"));
-            for (ProtocolStep step : protocol.getSteps()) {
+            List<ProtocolStep> steps = protocol.getSteps();
+            if (steps.isEmpty()) {
+                throw new ValidationException(
+                    "Protocol '" + protocol.getName() + "' has no steps. " +
+                    "Add steps via POST /api/protocols/" + protocolId + "/steps before creating a plan.");
+            }
+            for (ProtocolStep step : steps) {
                 ProposedAction action = new ProposedAction();
                 action.setName(step.getName());
                 plan.addLeaf(action);

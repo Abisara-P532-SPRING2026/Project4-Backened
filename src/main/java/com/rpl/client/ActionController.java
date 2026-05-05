@@ -1,5 +1,6 @@
 package com.rpl.client;
 
+import com.rpl.client.dto.ActionPatchRequest;
 import com.rpl.client.dto.AllocationRequest;
 import com.rpl.client.dto.AssetUtilisationResponse;
 import com.rpl.client.dto.RejectReasonRequest;
@@ -12,6 +13,7 @@ import com.rpl.manager.AssetUtilisationQueryManager;
 import com.rpl.manager.ResourceAllocationManager;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,6 +39,11 @@ public class ActionController {
     @GetMapping("/{id}")
     public ProposedAction get(@PathVariable Long id) {
         return actionManager.get(id);
+    }
+
+    @PatchMapping("/{id}")
+    public ProposedAction patch(@PathVariable Long id, @RequestBody ActionPatchRequest body) {
+        return actionManager.patch(id, body.timeRef());
     }
 
     @PostMapping("/{id}/review")

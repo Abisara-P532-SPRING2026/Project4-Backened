@@ -23,8 +23,10 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ActionManager {
     private final ProposedActionRepository proposedActionRepository;
     private final ImplementedActionRepository implementedActionRepository;
@@ -65,6 +67,15 @@ public class ActionManager {
 
     public ProposedAction get(Long id) {
         return proposedActionRepository.findById(id).orElseThrow(() -> new NotFoundException("Action not found"));
+    }
+
+    public ProposedAction patch(Long id, java.time.Instant timeRef) {
+        ProposedAction action = proposedActionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Action not found"));
+        if (timeRef != null) {
+            action.setTimeRef(timeRef);
+        }
+        return proposedActionRepository.save(action);
     }
 
     public ProposedAction transition(Long id, String event) {
@@ -158,12 +169,14 @@ public class ActionManager {
         }
 
         if ("implement".equalsIgnoreCase(event)) {
-            ImplementedAction implementedAction = new ImplementedAction();
-            implementedAction.setProposedAction(saved);
-            implementedAction.setActualStart(clock.instant());
-            implementedAction.setActualParty(saved.getParty());
-            implementedAction.setActualLocation(saved.getLocation());
-            implementedActionRepository.save(implementedAction);
+            ImplementedAction impl = implementedActionRepository
+                    .findByProposedAction_Id(saved.getId())
+                    .orElseGet(ImplementedAction::new);
+            impl.setProposedAction(saved);
+            impl.setActualStart(clock.instant());
+            impl.setActualParty(saved.getParty());
+            impl.setActualLocation(saved.getLocation());
+            implementedActionRepository.save(impl);
         }
 
         if ("complete".equalsIgnoreCase(event)) {

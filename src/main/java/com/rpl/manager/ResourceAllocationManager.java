@@ -12,8 +12,10 @@ import com.rpl.resourceaccess.ProposedActionRepository;
 import com.rpl.resourceaccess.ResourceAllocationRepository;
 import com.rpl.resourceaccess.ResourceTypeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ResourceAllocationManager {
     private final ResourceAllocationRepository allocationRepository;
     private final ProposedActionRepository actionRepository;
