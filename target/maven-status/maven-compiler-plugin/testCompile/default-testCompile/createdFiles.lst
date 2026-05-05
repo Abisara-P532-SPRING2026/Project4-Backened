@@ -1,5 +1,6 @@
 com/rpl/engine/AbstractLedgerEntryGeneratorPostingRuleTest$ExposingGenerator.class
 com/rpl/engine/DepthFirstPlanIteratorTest.class
+com/rpl/domain/composite/CompletionProgressVisitorTest.class
 com/rpl/manager/AuditLogManagerTest.class
 com/rpl/domain/composite/PlanNestedCompositeStatusTest.class
 com/rpl/domain/composite/PlanStatusTest.class
@@ -8,6 +9,8 @@ com/rpl/domain/state/ActionStateNameTest.class
 com/rpl/domain/state/StateClassesTest.class
 com/rpl/manager/ActionManagerSuspensionTest.class
 com/rpl/resourceaccess/ImplementedActionRepositoryMethodTest.class
+com/rpl/domain/state/ReviewingStateTest.class
 com/rpl/resourceaccess/SuspensionRepositoryMethodTest.class
 com/rpl/domain/composite/PlanNodeQuantityTest.class
+com/rpl/domain/ProposedActionTotalSuspendedMinutesTest.class
 com/rpl/engine/AbstractLedgerEntryGeneratorPostingRuleTest.class

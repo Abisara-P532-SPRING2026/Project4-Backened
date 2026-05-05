@@ -31,8 +31,10 @@ public class ResourceAllocationManager {
     public ResourceAllocation attach(Long actionId, Long resourceTypeId, ResourceAllocation allocationRequest) {
         ProposedAction action = actionRepository.findById(actionId)
                 .orElseThrow(() -> new NotFoundException("Action not found"));
-        if (action.getStatus() == ActionStatus.COMPLETED || action.getStatus() == ActionStatus.ABANDONED) {
-            throw new ConflictException("Cannot allocate resources to terminal state actions");
+        if (action.getStatus() == ActionStatus.COMPLETED
+                || action.getStatus() == ActionStatus.ABANDONED
+                || action.getStatus() == ActionStatus.REVIEWING) {
+            throw new ConflictException("Cannot allocate resources to this action in its current state");
         }
         ResourceType resourceType = resourceTypeRepository.findById(resourceTypeId)
                 .orElseThrow(() -> new NotFoundException("Resource type not found"));

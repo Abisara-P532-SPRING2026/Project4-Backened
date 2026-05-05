@@ -4,9 +4,15 @@ import com.rpl.domain.Plan;
 import com.rpl.domain.ProposedAction;
 import com.rpl.domain.Protocol;
 import com.rpl.domain.ProtocolStep;
+import com.rpl.engine.CompletionProgressVisitor;
+import com.rpl.engine.OverdueActionVisitor;
+import com.rpl.engine.PlanMetricsEngine;
+import com.rpl.engine.ResourceUtilisationVisitor;
 import com.rpl.exception.NotFoundException;
+import com.rpl.exception.ValidationException;
 import com.rpl.resourceaccess.PlanRepository;
 import com.rpl.resourceaccess.ProtocolRepository;
+import java.time.Clock;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -14,10 +20,18 @@ import org.springframework.stereotype.Service;
 public class PlanManager {
     private final PlanRepository planRepository;
     private final ProtocolRepository protocolRepository;
+    private final PlanMetricsEngine planMetricsEngine;
+    private final Clock clock;
 
-    public PlanManager(PlanRepository planRepository, ProtocolRepository protocolRepository) {
+    public PlanManager(
+            PlanRepository planRepository,
+            ProtocolRepository protocolRepository,
+            PlanMetricsEngine planMetricsEngine,
+            Clock clock) {
         this.planRepository = planRepository;
         this.protocolRepository = protocolRepository;
+        this.planMetricsEngine = planMetricsEngine;
+        this.clock = clock;
     }
 
     public Plan create(String name, Long protocolId, Long parentPlanId) {
@@ -48,5 +62,18 @@ public class PlanManager {
 
     public List<Plan> list() {
         return planRepository.findAll();
+    }
+
+    public Object getMetrics(Long planId, String type) {
+        Plan plan = planRepository.findById(planId).orElseThrow(() -> new NotFoundException("Plan not found"));
+        if (type == null || type.isBlank()) {
+            throw new ValidationException("Unknown metric type: ");
+        }
+        return switch (type.toLowerCase()) {
+            case "progress" -> planMetricsEngine.run(plan, new CompletionProgressVisitor()).result();
+            case "utilisation" -> planMetricsEngine.run(plan, new ResourceUtilisationVisitor()).getTotals();
+            case "overdue" -> planMetricsEngine.run(plan, new OverdueActionVisitor(clock)).result();
+            default -> throw new ValidationException("Unknown metric type: " + type);
+        };
     }
 }

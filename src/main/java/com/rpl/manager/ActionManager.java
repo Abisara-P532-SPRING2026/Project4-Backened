@@ -10,9 +10,12 @@ import com.rpl.domain.state.ActionState;
 import com.rpl.domain.state.CompletedState;
 import com.rpl.domain.state.InProgressState;
 import com.rpl.domain.state.ProposedState;
+import com.rpl.domain.state.ReviewingState;
 import com.rpl.domain.state.SuspendedState;
 import com.rpl.engine.LedgerEntryEngine;
+import com.rpl.exception.ConflictException;
 import com.rpl.exception.NotFoundException;
+import com.rpl.exception.ValidationException;
 import com.rpl.resourceaccess.ImplementedActionRepository;
 import com.rpl.resourceaccess.ProposedActionRepository;
 import com.rpl.resourceaccess.SuspensionRepository;
@@ -41,6 +44,7 @@ public class ActionManager {
             ProposedState proposedState,
             SuspendedState suspendedState,
             InProgressState inProgressState,
+            ReviewingState reviewingState,
             CompletedState completedState,
             AbandonedState abandonedState) {
         this.proposedActionRepository = proposedActionRepository;
@@ -53,9 +57,14 @@ public class ActionManager {
                 ActionStatus.PROPOSED, proposedState,
                 ActionStatus.SUSPENDED, suspendedState,
                 ActionStatus.IN_PROGRESS, inProgressState,
+                ActionStatus.REVIEWING, reviewingState,
                 ActionStatus.COMPLETED, completedState,
                 ActionStatus.ABANDONED, abandonedState
         );
+    }
+
+    public ProposedAction get(Long id) {
+        return proposedActionRepository.findById(id).orElseThrow(() -> new NotFoundException("Action not found"));
     }
 
     public ProposedAction transition(Long id, String event) {
@@ -66,6 +75,49 @@ public class ActionManager {
         return transition(id, "suspend", reason != null ? reason : "");
     }
 
+    public ProposedAction reviewAction(Long id) {
+        ProposedAction action = proposedActionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Action not found"));
+        if (action.getStatus() != ActionStatus.IN_PROGRESS) {
+            throw new ConflictException("review requires action in IN_PROGRESS state");
+        }
+        ActionStatus next = states.get(ActionStatus.IN_PROGRESS).review(action);
+        action.setStatus(next);
+        ProposedAction saved = proposedActionRepository.save(action);
+        auditLogManager.record("ACTION_REVIEWED", null, null, saved.getId());
+        return saved;
+    }
+
+    public ProposedAction approveAction(Long id) {
+        ProposedAction action = proposedActionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Action not found"));
+        if (action.getStatus() != ActionStatus.REVIEWING) {
+            throw new ConflictException("approve requires action in REVIEWING state");
+        }
+        ActionStatus next = states.get(ActionStatus.REVIEWING).approve();
+        action.setStatus(next);
+        ProposedAction saved = proposedActionRepository.save(action);
+        implementedActionRepository.findByProposedAction_Id(saved.getId()).ifPresent(ledgerEntryEngine::generate);
+        auditLogManager.record("ACTION_APPROVED", null, null, saved.getId());
+        return saved;
+    }
+
+    public ProposedAction rejectAction(Long id, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new ValidationException("Rejection reason is required");
+        }
+        ProposedAction action = proposedActionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Action not found"));
+        if (action.getStatus() != ActionStatus.REVIEWING) {
+            throw new ConflictException("reject requires action in REVIEWING state");
+        }
+        ActionStatus next = states.get(ActionStatus.REVIEWING).reject(action, reason);
+        action.setStatus(next);
+        ProposedAction saved = proposedActionRepository.save(action);
+        auditLogManager.record("ACTION_REJECTED", null, null, saved.getId());
+        return saved;
+    }
+
     public List<SuspensionResponse> getSuspensions(Long actionId) {
         proposedActionRepository.findById(actionId).orElseThrow(() -> new NotFoundException("Action not found"));
         return suspensionRepository.findByProposedAction_Id(actionId).stream()
@@ -74,21 +126,21 @@ public class ActionManager {
                         s.getReason(),
                         s.getStartDate(),
                         s.getEndDate(),
-                        s.getDurationMinutes()))
+                        s.getDurationMinutes(),
+                        s.getEndDate() == null ? "ongoing" : String.valueOf(s.getDurationMinutes())))
                 .toList();
     }
 
     private ProposedAction transition(Long id, String event, String suspendReason) {
         ProposedAction action = proposedActionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Action not found"));
-        ActionStatus previousStatus = action.getStatus();
         ActionState state = states.get(action.getStatus());
         ActionStatus next = switch (event.toLowerCase()) {
             case "implement" -> state.implement();
             case "suspend" -> state.suspend();
-            case "resume" -> state.resume();
+            case "resume" -> state.resume(action);
             case "complete" -> state.complete();
-            case "abandon" -> state.abandon();
+            case "abandon" -> state.abandon(action);
             default -> throw new IllegalArgumentException("Unknown event: " + event);
         };
         action.setStatus(next);
@@ -100,20 +152,6 @@ public class ActionManager {
             suspension.setReason(suspendReason);
             suspension.setStartDate(clock.instant());
             suspensionRepository.save(suspension);
-        }
-
-        if ("resume".equalsIgnoreCase(event)) {
-            suspensionRepository.findOpenByActionId(saved.getId()).ifPresent(s -> {
-                s.setEndDate(clock.instant());
-                suspensionRepository.save(s);
-            });
-        }
-
-        if ("abandon".equalsIgnoreCase(event) && previousStatus == ActionStatus.SUSPENDED) {
-            suspensionRepository.findOpenByActionId(saved.getId()).ifPresent(s -> {
-                s.setEndDate(clock.instant());
-                suspensionRepository.save(s);
-            });
         }
 
         if ("implement".equalsIgnoreCase(event)) {

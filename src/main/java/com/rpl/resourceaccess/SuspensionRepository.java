@@ -12,4 +12,11 @@ public interface SuspensionRepository extends JpaRepository<Suspension, Long> {
 
     @Query("select s from Suspension s where s.proposedAction.id = :id and s.endDate is null")
     Optional<Suspension> findOpenByActionId(@Param("id") Long actionId);
+
+    @Query(
+            value =
+                    "SELECT COALESCE(CAST(SUM(EXTRACT(EPOCH FROM (s.end_date - s.start_date)) / 60) AS BIGINT), 0)"
+                            + " FROM suspension s WHERE s.proposed_action_id = :id AND s.end_date IS NOT NULL",
+            nativeQuery = true)
+    long sumClosedSuspendedMinutesByProposedActionId(@Param("id") Long proposedActionId);
 }

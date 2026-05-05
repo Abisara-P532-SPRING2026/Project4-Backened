@@ -1,6 +1,7 @@
 package com.rpl.client;
 
 import com.rpl.client.dto.PlanCreateRequest;
+import com.rpl.client.dto.PlanReportLineResponse;
 import com.rpl.domain.Plan;
 import com.rpl.manager.PlanManager;
 import com.rpl.manager.ReportManager;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -39,7 +41,12 @@ public class PlanController {
     }
 
     @GetMapping("/{id}/report")
-    public List<String> report(@PathVariable Long id) {
+    public List<PlanReportLineResponse> report(@PathVariable Long id) {
         return reportManager.planReport(id);
+    }
+
+    @GetMapping("/{id}/metrics")
+    public Object metrics(@PathVariable Long id, @RequestParam String type) {
+        return planManager.getMetrics(id, type);
     }
 }

@@ -2,6 +2,7 @@ package com.rpl.domain;
 
 import com.rpl.domain.composite.PlanNode;
 import com.rpl.domain.composite.PlanNodeVisitor;
+import com.rpl.resourceaccess.SuspensionRepository;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -109,5 +110,13 @@ public class ProposedAction implements PlanNode {
     @Override
     public void accept(PlanNodeVisitor v) {
         v.visit(this);
+    }
+
+    /** Sum of closed suspension durations for this action (minutes only; open suspensions excluded). */
+    public long getTotalSuspendedMinutes(SuspensionRepository suspensionRepository) {
+        if (id == null) {
+            return 0L;
+        }
+        return suspensionRepository.sumClosedSuspendedMinutesByProposedActionId(id);
     }
 }

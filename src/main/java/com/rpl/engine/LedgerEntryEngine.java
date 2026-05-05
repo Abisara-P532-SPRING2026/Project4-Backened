@@ -5,13 +5,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class LedgerEntryEngine {
-    private final ConsumableLedgerEntryGenerator generator;
+    private final ConsumableLedgerEntryGenerator consumableLedgerEntryGenerator;
+    private final AssetLedgerEntryGenerator assetLedgerEntryGenerator;
 
-    public LedgerEntryEngine(ConsumableLedgerEntryGenerator generator) {
-        this.generator = generator;
+    public LedgerEntryEngine(
+            ConsumableLedgerEntryGenerator consumableLedgerEntryGenerator,
+            AssetLedgerEntryGenerator assetLedgerEntryGenerator) {
+        this.consumableLedgerEntryGenerator = consumableLedgerEntryGenerator;
+        this.assetLedgerEntryGenerator = assetLedgerEntryGenerator;
     }
 
     public void generate(ImplementedAction action) {
-        generator.generateEntries(action);
+        consumableLedgerEntryGenerator.generateEntries(action);
+        assetLedgerEntryGenerator.generateEntries(action);
     }
 }

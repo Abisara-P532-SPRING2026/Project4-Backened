@@ -118,11 +118,12 @@ public class Plan implements PlanNode {
         long completed = leaves.stream().filter(s -> s == ActionStatus.COMPLETED).count();
         long abandoned = leaves.stream().filter(s -> s == ActionStatus.ABANDONED).count();
         boolean hasInProgress = leaves.stream().anyMatch(s -> s == ActionStatus.IN_PROGRESS);
+        boolean hasReviewing = leaves.stream().anyMatch(s -> s == ActionStatus.REVIEWING);
         boolean hasSuspended = leaves.stream().anyMatch(s -> s == ActionStatus.SUSPENDED);
         if (completed == n) {
             return ActionStatus.COMPLETED;
         }
-        if (hasInProgress || completed > 0) {
+        if (hasInProgress || hasReviewing || completed > 0) {
             return ActionStatus.IN_PROGRESS;
         }
         if (hasSuspended) {

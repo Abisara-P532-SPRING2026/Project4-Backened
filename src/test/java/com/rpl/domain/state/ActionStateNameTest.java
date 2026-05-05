@@ -1,5 +1,9 @@
 package com.rpl.domain.state;
 
+import static org.mockito.Mockito.mock;
+
+import com.rpl.resourceaccess.SuspensionRepository;
+import java.time.Clock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +16,7 @@ class ActionStateNameTest {
 
     @Test
     void suspendedState_name_returnsSuspended() {
-        Assertions.assertEquals("SUSPENDED", new SuspendedState().name());
+        Assertions.assertEquals("SUSPENDED", new SuspendedState(mock(SuspensionRepository.class), Clock.systemUTC()).name());
     }
 
     @Test
@@ -28,5 +32,11 @@ class ActionStateNameTest {
     @Test
     void abandonedState_name_returnsAbandoned() {
         Assertions.assertEquals("ABANDONED", new AbandonedState().name());
+    }
+
+    @Test
+    void reviewingState_name_returnsReviewing() {
+        Assertions.assertEquals(
+                "REVIEWING", new ReviewingState(mock(SuspensionRepository.class), Clock.systemUTC()).name());
     }
 }

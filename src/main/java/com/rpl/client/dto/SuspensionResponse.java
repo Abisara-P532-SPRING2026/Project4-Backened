@@ -7,5 +7,6 @@ public record SuspensionResponse(
         String reason,
         Instant startDate,
         Instant endDate,
-        Long durationMinutes) {
+        Long durationMinutes,
+        String durationDisplay) {
 }

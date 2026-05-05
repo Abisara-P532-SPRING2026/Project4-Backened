@@ -14,6 +14,7 @@ import com.rpl.domain.state.AbandonedState;
 import com.rpl.domain.state.CompletedState;
 import com.rpl.domain.state.InProgressState;
 import com.rpl.domain.state.ProposedState;
+import com.rpl.domain.state.ReviewingState;
 import com.rpl.domain.state.SuspendedState;
 import com.rpl.engine.LedgerEntryEngine;
 import com.rpl.resourceaccess.ImplementedActionRepository;
@@ -65,8 +66,9 @@ class ActionManagerSuspensionTest {
                 auditLogManager,
                 clock,
                 new ProposedState(),
-                new SuspendedState(),
+                new SuspendedState(suspensionRepository, clock),
                 new InProgressState(),
+                new ReviewingState(suspensionRepository, clock),
                 new CompletedState(),
                 new AbandonedState());
     }
